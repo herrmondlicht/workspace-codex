@@ -7,11 +7,8 @@ BIN_DIR="${HOME}/.local/bin"
 
 mkdir -p "$BIN_DIR"
 
-ln -sfn "$SCRIPT_DIR/start-agent.sh" "$BIN_DIR/start-agent"
-ln -sfn "$SCRIPT_DIR/stop-agent.sh" "$BIN_DIR/stop-agent"
-ln -sfn "$SCRIPT_DIR/start-codex.sh" "$BIN_DIR/start-codex"
-ln -sfn "$SCRIPT_DIR/start-claude.sh" "$BIN_DIR/start-claude"
-ln -sfn "$SCRIPT_DIR/init-agent.sh" "$BIN_DIR/init-agent"
+ln -sfn "$SCRIPT_DIR/bin/start-agent" "$BIN_DIR/start-agent"
+ln -sfn "$SCRIPT_DIR/bin/stop-agent" "$BIN_DIR/stop-agent"
 
 cat <<EOF
 Installed commands into $BIN_DIR
@@ -19,9 +16,6 @@ Installed commands into $BIN_DIR
 Available commands:
   start-agent
   stop-agent
-  start-codex
-  start-claude
-  init-agent
 
 If '$BIN_DIR' is not in your PATH, add this line to your shell profile:
   export PATH="$BIN_DIR:\$PATH"
