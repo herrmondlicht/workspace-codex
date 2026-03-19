@@ -68,6 +68,7 @@ start-agent example
 ```
 
 If a token matches more than one generated compose file, the command exits with an error and asks for a more specific name.
+Without `--new`, the command reuses the existing project container when one is already running.
 
 ## Start Codex
 
@@ -76,6 +77,11 @@ start-agent example codex
 ```
 
 Codex is launched with `--dangerously-bypass-approvals-and-sandbox` by default.
+By default this runs inside the existing project container. To force a one-off container instead:
+
+```bash
+start-agent example --new codex
+```
 
 ## Start Claude
 
@@ -84,6 +90,11 @@ start-agent example claude
 ```
 
 Claude runs with `CLAUDE_CODE_ALLOW_ROOT=1`. Claude settings are seeded from [managed-settings.json](/Users/gsilva/projects/codex-context/config/claude/managed-settings.json), and login persistence is stored in Docker volumes.
+By default this runs inside the existing project container. To force a one-off container instead:
+
+```bash
+start-agent example --new claude
+```
 
 ## Stop A Project
 
@@ -92,6 +103,7 @@ stop-agent example
 ```
 
 This runs `docker compose down` for that project. It removes the project container and network, but keeps named volumes such as Codex and Claude auth storage.
+It also force-removes any one-off containers started for the same Compose project, such as `codex` or `claude` runs, before bringing the project down.
 
 ## Clear A Project
 
@@ -115,11 +127,13 @@ Per-project compose files are generated locally in this repo and are intended to
 These files mount:
 
 - the selected workspace at `/work/workspace`
-- host AWS, SSH, and GitHub CLI config from your home directory
+- host AWS, Jira ACLI profile seed, SSH, and GitHub CLI config from your home directory
 - persistent Codex auth
+- persistent Jira ACLI auth/config
 - persistent Claude auth/config
 
 ## Notes
 
 - `config/projects.yml` is not used by the current launcher flow.
 - If you change the compose template or entrypoint behavior and need it to apply to an existing project container, stop and start that project again so Docker recreates the container.
+- Existing generated `docker-compose.<project>.local.yml` files will not pick up the new `sleep infinity` service command automatically. Regenerate them or add that `command` entry manually if you want the base agent container to stay running between launches.

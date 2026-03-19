@@ -8,6 +8,7 @@ source "$SCRIPT_DIR/agent-common.sh"
 
 WORKSPACE_PATH=""
 PROJECT_NAME=""
+USE_NEW_CONTAINER=0
 
 # Uso:
 #   ./start-agent.sh --workspace /path/to/project
@@ -35,6 +36,10 @@ while [[ $# -gt 0 ]]; do
       PROJECT_NAME="$2"
       shift 2
       ;;
+    --new)
+      USE_NEW_CONTAINER=1
+      shift
+      ;;
     codex|claude)
       COMMAND_ARGS+=("$1")
       shift
@@ -54,6 +59,7 @@ done
 COMPOSE_FILE=""
 COMPOSE_PROJECT_NAME=""
 COMPOSE_RUN_ARGS=()
+COMPOSE_EXEC_ARGS=()
 
 if [[ ${#COMMAND_ARGS[@]} -gt 0 && "${COMMAND_ARGS[0]}" == "codex" ]]; then
   HAS_CODEX_BYPASS_FLAG=0
@@ -75,6 +81,7 @@ fi
 
 if [[ ${#COMMAND_ARGS[@]} -gt 0 && "${COMMAND_ARGS[0]}" == "claude" ]]; then
   COMPOSE_RUN_ARGS+=(-e CLAUDE_CODE_ALLOW_ROOT=1)
+  COMPOSE_EXEC_ARGS+=(-e CLAUDE_CODE_ALLOW_ROOT=1)
 fi
 
 if [[ -n "$WORKSPACE_PATH" ]]; then
@@ -127,14 +134,43 @@ else
   echo "docker not found on host; leaving DOCKER_API_VERSION unset"
 fi
 
-if [[ ${#COMMAND_ARGS[@]} -eq 0 ]]; then
-  docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" up -d --build
-else
-  SERVICE_NAME="$(docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" config --services | head -n 1)"
-  if [[ -z "${SERVICE_NAME}" ]]; then
-    echo "Could not determine service name from $COMPOSE_FILE" >&2
-    exit 1
+SERVICE_NAME="$(docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" config --services | head -n 1)"
+if [[ -z "${SERVICE_NAME}" ]]; then
+  echo "Could not determine service name from $COMPOSE_FILE" >&2
+  exit 1
+fi
+
+ensure_service_running() {
+  local container_id
+  local running_state
+
+  container_id="$(docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" ps -q "$SERVICE_NAME" 2>/dev/null || true)"
+  if [[ -n "$container_id" ]]; then
+    running_state="$(docker inspect -f '{{.State.Running}}' "$container_id" 2>/dev/null || true)"
+    if [[ "$running_state" == "true" ]]; then
+      return 0
+    fi
   fi
 
-  docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" run --rm --build "${COMPOSE_RUN_ARGS[@]}" "$SERVICE_NAME" "${COMMAND_ARGS[@]}"
+  docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" up -d --build "$SERVICE_NAME"
+
+  container_id="$(docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" ps -q "$SERVICE_NAME" 2>/dev/null || true)"
+  running_state="$(docker inspect -f '{{.State.Running}}' "$container_id" 2>/dev/null || true)"
+  if [[ -z "$container_id" || "$running_state" != "true" ]]; then
+    echo "Service $SERVICE_NAME is not staying up." >&2
+    echo "Your generated compose file may be missing the long-running service command." >&2
+    echo "Regenerate the project compose file or add: command: [\"sleep\", \"infinity\"]" >&2
+    exit 1
+  fi
+}
+
+if [[ ${#COMMAND_ARGS[@]} -eq 0 ]]; then
+  ensure_service_running
+else
+  if [[ $USE_NEW_CONTAINER -eq 1 ]]; then
+    docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" run --rm --build "${COMPOSE_RUN_ARGS[@]}" "$SERVICE_NAME" "${COMMAND_ARGS[@]}"
+  else
+    ensure_service_running
+    docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" exec "${COMPOSE_EXEC_ARGS[@]}" "$SERVICE_NAME" "${COMMAND_ARGS[@]}"
+  fi
 fi

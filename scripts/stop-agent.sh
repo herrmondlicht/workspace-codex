@@ -57,4 +57,10 @@ if [[ ! -f "$COMPOSE_FILE" ]]; then
   exit 1
 fi
 
-docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" down
+mapfile -t PROJECT_CONTAINERS < <(docker ps -aq --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME")
+
+if [[ ${#PROJECT_CONTAINERS[@]} -gt 0 ]]; then
+  docker rm -f "${PROJECT_CONTAINERS[@]}"
+fi
+
+docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" down --remove-orphans

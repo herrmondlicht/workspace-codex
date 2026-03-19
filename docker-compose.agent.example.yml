@@ -10,23 +10,28 @@ services:
       - DOCKER_API_VERSION=${DOCKER_API_VERSION:-}
       - AWS_PROFILE
       - AWS_DEFAULT_REGION
+      - ATLASSIAN_API_TOKEN
       - OPENAI_API_KEY
       - CLAUDE_CODE_ALLOW_ROOT=1
     volumes:
       - .:/work
       - __WORKSPACE_PATH__:/work/workspace
       - __HOME_DIR__/.aws:/root/.aws:ro
+      - __HOME_DIR__/.config/acli:/root/.config/acli-host:ro
       - __HOME_DIR__/.config/gh:/root/.config/gh:ro
       - __HOME_DIR__/.ssh:/root/.ssh:ro
       - /var/run/docker.sock:/var/run/docker.sock
+      - acli-config:/root/.config/acli
       - codex-auth:/root/.codex
       - claude-auth:/root/.claude
       - claude-code-config:/root/.config/claude-code
     working_dir: /work/workspace
+    command: ["sleep", "infinity"]
     tty: true
     stdin_open: true
 
 volumes:
+  acli-config:
   codex-auth:
   claude-auth:
   claude-code-config:
