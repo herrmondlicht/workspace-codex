@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_PATH="$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())' "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPT_DIR/agent-common.sh"
 
 WORKSPACE_PATH=""
@@ -78,14 +79,14 @@ fi
 
 if [[ -n "$WORKSPACE_PATH" ]]; then
   WORKSPACE_PATH="$(normalize_workspace_path "$WORKSPACE_PATH")"
-  COMPOSE_FILE="$(compose_file_for_workspace "$SCRIPT_DIR" "$WORKSPACE_PATH")"
+  COMPOSE_FILE="$(compose_file_for_workspace "$ROOT_DIR" "$WORKSPACE_PATH")"
   COMPOSE_PROJECT_NAME="$(compose_project_name_for_workspace "$WORKSPACE_PATH")"
 
   if [[ ! -f "$COMPOSE_FILE" ]]; then
     "$SCRIPT_DIR/init-agent.sh" "$WORKSPACE_PATH"
   fi
 elif [[ -n "$PROJECT_NAME" ]]; then
-  if COMPOSE_FILE="$(resolve_compose_file_by_project_name "$SCRIPT_DIR" "$PROJECT_NAME")"; then
+  if COMPOSE_FILE="$(resolve_compose_file_by_project_name "$ROOT_DIR" "$PROJECT_NAME")"; then
     COMPOSE_PROJECT_NAME="$(compose_project_name_from_compose_file "$COMPOSE_FILE")"
   else
     status=$?
@@ -98,7 +99,7 @@ elif [[ -n "$PROJECT_NAME" ]]; then
     exit 1
   fi
 else
-  if COMPOSE_FILE="$(resolve_existing_compose_file "$SCRIPT_DIR")"; then
+  if COMPOSE_FILE="$(resolve_existing_compose_file "$ROOT_DIR")"; then
     :
   else
     status=$?
@@ -107,7 +108,7 @@ else
     fi
 
     "$SCRIPT_DIR/init-agent.sh"
-    COMPOSE_FILE="$(resolve_existing_compose_file "$SCRIPT_DIR")"
+    COMPOSE_FILE="$(resolve_existing_compose_file "$ROOT_DIR")"
   fi
 
   COMPOSE_PROJECT_NAME="$(compose_project_name_from_compose_file "$COMPOSE_FILE")"

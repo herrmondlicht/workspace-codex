@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_PATH="$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())' "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPT_DIR/agent-common.sh"
 
 WORKSPACE_PATH=""
@@ -39,20 +40,20 @@ done
 
 if [[ -n "$WORKSPACE_PATH" ]]; then
   WORKSPACE_PATH="$(normalize_workspace_path "$WORKSPACE_PATH")"
-  COMPOSE_FILE="$(compose_file_for_workspace "$SCRIPT_DIR" "$WORKSPACE_PATH")"
+  COMPOSE_FILE="$(compose_file_for_workspace "$ROOT_DIR" "$WORKSPACE_PATH")"
   COMPOSE_PROJECT_NAME="$(compose_project_name_for_workspace "$WORKSPACE_PATH")"
 elif [[ -n "$PROJECT_NAME" ]]; then
-  COMPOSE_FILE="$(resolve_compose_file_by_project_name "$SCRIPT_DIR" "$PROJECT_NAME")"
+  COMPOSE_FILE="$(resolve_compose_file_by_project_name "$ROOT_DIR" "$PROJECT_NAME")"
   COMPOSE_PROJECT_NAME="$(compose_project_name_from_compose_file "$COMPOSE_FILE")"
 else
-  COMPOSE_FILE="$(resolve_existing_compose_file "$SCRIPT_DIR")"
+  COMPOSE_FILE="$(resolve_existing_compose_file "$ROOT_DIR")"
   COMPOSE_PROJECT_NAME="$(compose_project_name_from_compose_file "$COMPOSE_FILE")"
 fi
 
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   echo "Compose file not found: $COMPOSE_FILE" >&2
   echo "Available:" >&2
-  ls -1 "$SCRIPT_DIR"/docker-compose.*.yml 2>/dev/null || true
+  ls -1 "$ROOT_DIR"/docker-compose.*.yml 2>/dev/null || true
   exit 1
 fi
 

@@ -3,10 +3,11 @@ set -euo pipefail
 
 SCRIPT_PATH="$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())' "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPT_DIR/agent-common.sh"
 
 WORKSPACE_PATH="${1:-}"
-TEMPLATE_FILE="$SCRIPT_DIR/docker-compose.agent.example.yml"
+TEMPLATE_FILE="$ROOT_DIR/docker-compose.agent.example.yml"
 
 if [[ ! -f "$TEMPLATE_FILE" ]]; then
   echo "Compose template not found: $TEMPLATE_FILE" >&2
@@ -25,7 +26,7 @@ fi
 
 HOME_DIR="$(python3 -c 'from pathlib import Path; print(Path.home())')"
 WORKSPACE_PATH="$(normalize_workspace_path "$WORKSPACE_PATH")"
-COMPOSE_FILE="$(compose_file_for_workspace "$SCRIPT_DIR" "$WORKSPACE_PATH")"
+COMPOSE_FILE="$(compose_file_for_workspace "$ROOT_DIR" "$WORKSPACE_PATH")"
 SERVICE_NAME="$(workspace_service_name "$WORKSPACE_PATH")"
 
 if [[ ! -d "$WORKSPACE_PATH" ]]; then

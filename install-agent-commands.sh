@@ -7,8 +7,8 @@ BIN_DIR="${HOME}/.local/bin"
 
 mkdir -p "$BIN_DIR"
 
-ln -sfn "$SCRIPT_DIR/bin/start-agent" "$BIN_DIR/start-agent"
-ln -sfn "$SCRIPT_DIR/bin/stop-agent" "$BIN_DIR/stop-agent"
+ln -sfn "$SCRIPT_DIR/start-agent.sh" "$BIN_DIR/start-agent"
+ln -sfn "$SCRIPT_DIR/stop-agent.sh" "$BIN_DIR/stop-agent"
 
 cat <<EOF
 Installed commands into $BIN_DIR
