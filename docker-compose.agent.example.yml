@@ -11,6 +11,7 @@ services:
       - AWS_PROFILE
       - AWS_DEFAULT_REGION
       - ATLASSIAN_API_TOKEN
+      - GH_TOKEN
       - OPENAI_API_KEY
       - CLAUDE_CODE_ALLOW_ROOT=1
     volumes:
